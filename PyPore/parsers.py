@@ -6,9 +6,9 @@
 # This program will read in an abf file using read_abf.py and
 # pull out the events, saving them as text files.
 
-from __future__ import division, print_function
+
 import sys
-from itertools import tee,izip,chain
+from itertools import tee,chain
 import re
 
 import PyPore
@@ -19,7 +19,7 @@ try:
     from PyQt4 import QtCore as Qc
 except:
     pass
-from core import *
+from .core import *
 
 import pyximport
 pyximport.install( setup_args={'include_dirs':np.get_include()})
@@ -40,7 +40,7 @@ class parser( object ):
         return self.to_json()
 
     def to_dict( self ):
-        d = { key: val for key, val in self.__dict__.items() if key != 'param_dict'
+        d = { key: val for key, val in list(self.__dict__.items()) if key != 'param_dict'
                                                              if type(val) in (int, float)
                                                                     or ('Qt' not in repr(val) )
                                                                     and 'lambda' not in repr(val) }
@@ -80,7 +80,7 @@ class parser( object ):
         corresponding to that value.
         '''
         try:
-            for key, lineEdit in self.param_dict.items():
+            for key, lineEdit in list(self.param_dict.items()):
                 val = lineEdit.text()
                 if '.' in val:
                     setattr( self, key, float( val ) )
@@ -215,7 +215,7 @@ def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
     a, b = tee(iterable)
     next(b, None)
-    return izip(a, b)
+    return zip(a, b)
 
 class StatSplit( parser ):
     """
@@ -299,8 +299,8 @@ class StatSplit( parser ):
             return segments
 
         lrs = [self._lr(pair[0],pair[1]) for pair in paired]
-        lefts = [alpha+beta*s for (alpha,beta,var),(s,e) in izip(lrs,paired)]
-        rights = [alpha+beta*e for (alpha,beta,var),(s,e) in izip(lrs,paired)]
+        lefts = [alpha+beta*s for (alpha,beta,var),(s,e) in zip(lrs,paired)]
+        rights = [alpha+beta*e for (alpha,beta,var),(s,e) in zip(lrs,paired)]
         segments = [ Segment( current=current[start:end],
                               start=start,
                               duration=(end-start) ) for start,end in paired ]
@@ -399,7 +399,7 @@ class StatSplit( parser ):
                 else np.log(self._var_c(start,end)))
         max_gain=self.min_gain_per_sample*self.window_width
         x=None
-        for i in xrange(start+self.min_width,end+1-self.min_width):
+        for i in range(start+self.min_width,end+1-self.min_width):
             low_var_summed = (i-start)*( self._var_c(start,i) if not self.use_log
                     else np.log(self._var_c(start,i)))
             high_var_summed = (end-i)*( self._var_c(i,end) if not self.use_log
@@ -444,7 +444,7 @@ class StatSplit( parser ):
             else log(self._lr(start,end)[2]))
         max_gain=self.min_gain_per_sample*self.window_width
         x=None
-        for i in xrange(start+self.min_width,end+1-self.min_width):
+        for i in range(start+self.min_width,end+1-self.min_width):
             low_var_summed = (i-start)*(self._lr(start,i)[2] if not self.use_log
                 else log(self._lr(start,i)[2]))
             high_var_summed = (end-i)*(self._lr(i,end)[2] if not self.use_log
@@ -476,7 +476,7 @@ class StatSplit( parser ):
         # scan in overlapping windows to find a spliting point
         split_pair = None
         pseudostart = start
-        for pseudostart in xrange(start, end-2*self.min_width, self.window_width//2 ):
+        for pseudostart in range(start, end-2*self.min_width, self.window_width//2 ):
             if pseudostart> start+ self.max_width:
             # scanned a long way with no splits, add a fake one at max_width
                 split_at = min(start+self.max_width, end-self.min_width)
@@ -583,11 +583,11 @@ class snakebase_parser( parser ):
         # Find the places where the derivative is low
         tics = np.concatenate( ( [0], np.where( diff < 1e-3 )[0], [ diff.shape[0] ] ) )
         # For pieces between these tics, make each point the cumulative sum of that piece and put it together piecewise
-        cumsum = np.concatenate( ( [ np.cumsum( diff[ tics[i] : tics[i+1] ] ) for i in xrange( tics.shape[0]-1 ) ] ) )
+        cumsum = np.concatenate( ( [ np.cumsum( diff[ tics[i] : tics[i+1] ] ) for i in range( tics.shape[0]-1 ) ] ) )
         # Find the edges where the cumulative sum passes a threshold
         split_points = np.where( np.abs( np.diff( np.where( cumsum > self.threshold, 1, 0 ) ) ) == 1 )[0] + 1
         # Return segments which do pass the threshold
-        return [ Segment( current = current[ tics[i]: tics[i+1] ], start = tics[i] ) for i in xrange( 1, tics.shape[0] - 1, 2 ) ]
+        return [ Segment( current = current[ tics[i]: tics[i+1] ], start = tics[i] ) for i in range( 1, tics.shape[0] - 1, 2 ) ]
 
     def GUI( self ):
         threshDefault = "1.5"
@@ -651,9 +651,9 @@ class FilterDerivativeSegmenter( parser ):
                 split_points = np.concatenate( ( split_points, [ start, end ] ) ) # Save the edges of the segment 
                 # Now you have the edges of all transitions saved, and so the states are the current between these transitions
         tics = np.concatenate( ( split_points, [ current.shape[0] ] ) )
-        tics = map( int, tics )
+        tics = list(map( int, tics ))
         return [ Segment( current=current[ tics[i]:tics[i+1] ], start=tics[i] ) 
-                    for i in xrange( 0, len(tics)-1, 2 ) ]
+                    for i in range( 0, len(tics)-1, 2 ) ]
 
     def GUI( self ):
         lowThreshDefault = "1e-2"

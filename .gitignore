@@ -1,0 +1,10 @@
+PyPore/DataTypes.py.bak
+PyPore/__pycache__/
+PyPore/alignment.py.bak
+PyPore/calignment.c
+PyPore/core.py.bak
+PyPore/cparsers.c
+PyPore/database.py.bak
+PyPore/hmm.py.bak
+PyPore/parsers.py.bak
+build/

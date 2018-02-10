@@ -14,7 +14,7 @@ cimport numpy as np
 from libc.math cimport log
 cimport cython
 
-from itertools import tee, izip, chain
+from itertools import tee, chain
 from core import Segment
 
 # Implement the max and min functions as cython
@@ -40,7 +40,7 @@ cdef inline double var_c( int start, int end, double [:] c, double [:] c2 ):
 def pairwise(iterable):
 	a, b = tee(iterable)
 	next(b, None)
-	return izip(a, b)
+	return zip(a, b)
 
 cdef class FastStatSplit:
 	'''

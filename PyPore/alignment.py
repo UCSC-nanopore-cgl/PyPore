@@ -14,9 +14,9 @@ import numpy as np
 import math
 import itertools as it 
 
-from core import *
-from parsers import *
-from DataTypes import *
+from .core import *
+from .parsers import *
+from .DataTypes import *
 
 from PyPore.calignment import cSegmentAligner
 from yahmm import *
@@ -84,7 +84,7 @@ class SegmentAligner( object ):
 			remaining_m_dur = sum_model_dur + m_segment.duration - dur
 			remaining_s_dur = total_seq_dur - s_segment.duration
 
-			for s_start in xrange( s_start+1, next_s ):
+			for s_start in range( s_start+1, next_s ):
 				s_segment = seq.segments[s_start]
 				dur = s_segment.duration / remaining_s_dur * remaining_m_dur
 				segments.append( ( start_time, dur, s_segment.mean, s_segment.mean, s_segment.std ) )
@@ -121,8 +121,8 @@ class PairwiseAligner( object ):
 		'''
 
 		score = np.zeros(( self.m+1, self.n+1 ))
-		for i in xrange( 1, self.m+1 ):
-			for j in xrange( 1, self.n+1 ):
+		for i in range( 1, self.m+1 ):
+			for j in range( 1, self.n+1 ):
 				score[i, j] = self._score( self.x[i-1], self.y[j-1] )
 
 		return score 
@@ -144,8 +144,8 @@ class PairwiseAligner( object ):
 		pointer[:, 0] = np.ones(self.m+1)*2
 		pointer[0, 0] = -1
 		# Using Dynamic Programming to fill in the matrix-- with pointers as a trail of breadcrumbs
-		for i in xrange( 1, self.m+1 ):
-			for j in xrange( 1, self.n+1 ):
+		for i in range( 1, self.m+1 ):
+			for j in range( 1, self.n+1 ):
 				scores = ( score[i-1, j-1] + self._score( self.x[i-1], self.y[j-1] ),
 						   score[i, j-1] + penalty,
 						   score[i-1, j] + penalty 
@@ -199,8 +199,8 @@ class PairwiseAligner( object ):
 
 		score = np.zeros( ( self.m+1, self.n+1 ) )
 		pointer = np.zeros( ( self.m+1, self.n+1 ) )
-		for i in xrange( 1, self.m+1 ):
-			for j in xrange( 1, self.n+1 ):
+		for i in range( 1, self.m+1 ):
+			for j in range( 1, self.n+1 ):
 				idx_scores = (     0,
 								   score[i-1, j-1] + self._score( self.x[i-1], self.y[j-1] ),
 								   score[i, j-1] + penalty,
@@ -357,7 +357,7 @@ class PSSM( object ):
 
 		offset = 0
 		for i, column in enumerate( zip( *msa ) ):
-			column = filter( lambda x: x is not '-', column )
+			column = [x for x in column if x is not '-']
 
 			if len( column ) == 0:
 				for seq in self.msa:
@@ -666,7 +666,7 @@ class ProfileAligner( object ):
 			if sname.startswith( "M" ) and first_match:
 				first_match = False
 				offset = int( sname[1:] )
-				for j in xrange( offset ):
+				for j in range( offset ):
 					for seq in master.msa:
 						del seq[0]
 					del master.pssm[0]
@@ -684,7 +684,7 @@ class ProfileAligner( object ):
 
 			# If reached the last sequence, cut off the remainder of the slave sequence
 			if sname is 'PE':
-				for i in xrange( len( states ) - i - 3 ):
+				for i in range( len( states ) - i - 3 ):
 					for seq in slave.msa:
 						del seq[-1]
 				break
@@ -707,7 +707,7 @@ class ProfileAligner( object ):
 		# Follow the slave's path through master
 		for i, state in enumerate( states[1:-1] ):
 			sname = state[1].name
-			print sname
+			print(sname)
 
 class MultipleSequenceAligner( object ):
 	'''
@@ -727,7 +727,7 @@ class MultipleSequenceAligner( object ):
 		'''
 
 		entropy = lambda col: 0.5*math.log( 2*np.pi*np.e*np.std( col )**2 ) if len(col) > 1 and np.std(col) > 0 else 0
-		score = sum( 1. / ( len(col)-col.count('-') )**2 * entropy( filter( lambda x: x is not '-', col ) ) for col in it.izip( *msa ) )
+		score = sum( 1. / ( len(col)-col.count('-') )**2 * entropy( [x for x in col if x is not '-'] ) for col in it.izip( *msa ) )
 		return score
 
 	def iterative_alignment( self, epsilon=1e-4, max_iterations=10, bandwidth=1 ):
@@ -756,9 +756,9 @@ class MultipleSequenceAligner( object ):
 			iteration += 1
 			last_score = best_score
 			# Run a full round of popping from the msa queue and enqueueing at the end
-			for i in xrange( n ):
+			for i in range( n ):
 				# Pull a single 'master' sequence off the top of the msa queue
-				slave = filter( lambda x: x is not '-', best_msa[i] )
+				slave = [x for x in best_msa[i] if x is not '-']
 
 				# Make the rest of them slaves
 				master = best_msa[:i] + best_msa[i+1:]
@@ -775,7 +775,7 @@ class MultipleSequenceAligner( object ):
 				if score < best_score:
 					best_msa, best_score = msa, score
 
-		m = max( map( len, best_msa ) )
+		m = max( list(map( len, best_msa )) )
 		for seq in best_msa:
 			seq.extend( ['-']*(m-len(seq) ) )
 
@@ -817,8 +817,8 @@ def NaiveTRF( seq, penalty=-1, min_score=2 ):
 		mask = np.identity( n+1 )
 
 		while True:
-			for i in xrange( 1, n+1 ):
-				for j in xrange( i, n+1 ):
+			for i in range( 1, n+1 ):
+				for j in range( i, n+1 ):
 
 					# Score function for local alignment, allowing for a mask to prevent certain alignments
 					scores = ( 0, 
@@ -884,7 +884,7 @@ def NaiveTRF( seq, penalty=-1, min_score=2 ):
 	sequences.append( ['-']*offset + seq[ last_end: ] )
 	
 	# Find the longest sequence which has been appended
-	n = max( map( len, sequences ) )
+	n = max( list(map( len, sequences )) )
 
 	# Pad the ends of the sequences
 	for i, seq in enumerate( sequences ):

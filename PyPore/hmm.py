@@ -25,7 +25,7 @@ class HMMBoard( Model ):
 
 		self.directions = [ '>' ] * n 
 		self.n = n
-		for i in xrange( 1,n+1 ):
+		for i in range( 1,n+1 ):
 			start = State( None, name="b{}s{}".format(name, i) )
 			end = State( None, name="b{}e{}".format(name, i) )
 
@@ -67,7 +67,7 @@ def ModularProfileModel( board_func, distributions, name, insert ):
 				boards.append( board )
 
 				# Iterate across all the ports on the board
-				for j, d in it.izip( xrange( 1,board.n+1 ), board.directions ):
+				for j, d in it.izip( range( 1,board.n+1 ), board.directions ):
 					# Get the end port from the last board and the start port from this board
 					end = getattr( last_board, 'e{}'.format( j ) )
 					start = getattr( board, 's{}'.format( j ) )
@@ -82,11 +82,11 @@ def ModularProfileModel( board_func, distributions, name, insert ):
 			# If the last distribution was actually a dictionary, then we're remerging from a fork.
 			elif isinstance( distributions[i-1], dict ):
 				# Calculate the number of forks in there
-				n = len( distributions[i-1].keys() )
+				n = len( list(distributions[i-1].keys()) )
 
 				# Go through each of the previous boards
 				for last_board in boards[-n:]:
-					for j, d in it.izip( xrange( 1,board.n+1 ), board.directions ):
+					for j, d in it.izip( range( 1,board.n+1 ), board.directions ):
 						# Get the appropriate end and start port
 						end = getattr( last_board, 'e{}'.format( j ) )
 						start = getattr( board, 's{}'.format( j ) )
@@ -103,10 +103,10 @@ def ModularProfileModel( board_func, distributions, name, insert ):
 		# If we're currently in a fork..
 		elif isinstance( distribution, dict ):
 			# Calculate the number of paths in this fork
-			n = len( distribution.keys() )
+			n = len( list(distribution.keys()) )
 
 			# For each path in the fork, attach the boards appropriately
-			for key, dist in distribution.items():
+			for key, dist in list(distribution.items()):
 				board = board_func( dist, "{}:{}".format( key, i+1 ), insert=insert )
 				boards.append( board )
 				model.add_model( board )
@@ -116,7 +116,7 @@ def ModularProfileModel( board_func, distributions, name, insert ):
 					last_board = boards[-n-1]
 
 					# Connect the ports appropriately
-					for j, d in it.izip( xrange( 1, board.n+1 ), board.directions ):
+					for j, d in it.izip( range( 1, board.n+1 ), board.directions ):
 						end = getattr( last_board, 'e{}'.format( j ) )
 						start = getattr( board, 's{}'.format( j ) )
 
@@ -130,7 +130,7 @@ def ModularProfileModel( board_func, distributions, name, insert ):
 				else:
 					# Go through each of the ports and give appropriate transition
 					# probabilities. 
-					for j, d in it.izip( xrange( 1, board.n+1 ), board.directions ):
+					for j, d in it.izip( range( 1, board.n+1 ), board.directions ):
 						# Get the start and end states
 						end = getattr( last_board, 'e{}'.format( j ) )
 						start = getattr( board, 's{}'.format( j ) )

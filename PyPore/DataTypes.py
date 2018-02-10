@@ -32,19 +32,20 @@ Event: A container for both the ionic current of a given event, and metadata, in
 '''
 
 import numpy as np
-from read_abf import *
+from .read_abf import *
 from matplotlib import pyplot as plt
-from hmm import *
-from core import *
-from database import *
-from parsers import *
-from alignment import *
+from .hmm import *
+from .core import *
+from .database import *
+from .parsers import *
+from .alignment import *
                  
 import json
 import time
-from itertools import chain, izip, tee, combinations
+from itertools import chain, tee, combinations
 import itertools as it
 import re
+from functools import reduce
 
 class MetaEvent( MetaSegment ):
     '''
@@ -89,15 +90,15 @@ class MetaEvent( MetaSegment ):
         if hmm:
             if not hidden_states:
                 _, hidden_states = self.apply_hmm( hmm, algorithm )
-            hidden_states = filter( lambda state: not state[1].is_silent(), hidden_states )
+            hidden_states = [state for state in hidden_states if not state[1].is_silent()]
             
             if isinstance( cmap, dict ):
                 # If you pass in a custom coloring scheme, use that.
                 hmm_color_cycle = []
                 for _, state in hidden_states:
-                    if state.name in cmap.keys():
+                    if state.name in list(cmap.keys()):
                         hmm_color_cycle.append( cmap[state.name] )
-                    elif 'else' in cmap.keys():
+                    elif 'else' in list(cmap.keys()):
                         hmm_color_cycle.append( cmap['else'] )
                     else:
                         hmm_color_cycle.append( 'k' )
@@ -123,14 +124,14 @@ class MetaEvent( MetaSegment ):
                 except:
                     # If using any other naming scheme, assign a color from the colormap
                     # to each state without any ordering, since none was specified.
-                    states = { hmm.states[i]: i for i in xrange( len(hmm.states) ) }
+                    states = { hmm.states[i]: i for i in range( len(hmm.states) ) }
                     hmm_color_cycle = [ cm( states[state] ) for i, state in hidden_states ]
 
-        if 'color' in kwargs.keys(): # If the user has specified a scheme..
+        if 'color' in list(kwargs.keys()): # If the user has specified a scheme..
             color_arg = kwargs['color'] # Pull out the coloring scheme..
             
             if color_arg == 'cycle': # Use a 4-color rotating cycle
-                color = [ color_cycle[i%len(color_cycle)] for i in xrange(self.n) ]
+                color = [ color_cycle[i%len(color_cycle)] for i in range(self.n) ]
 
             elif color_arg == 'hmm': # coloring by HMM hidden state
                 color = hmm_color_cycle
@@ -156,7 +157,7 @@ class MetaEvent( MetaSegment ):
             color, color_arg = 'k', 'k'
 
         # Set appropriate labels 
-        if 'label' in kwargs.keys():
+        if 'label' in list(kwargs.keys()):
             if isinstance( label, str ):
                 labels = [ kwargs['label'] ]
             else:
@@ -365,15 +366,15 @@ class Event( Segment ):
         if hmm:
             if not hidden_states:
                 _, hidden_states = self.apply_hmm( hmm, algorithm )
-            hidden_states = filter( lambda state: not state[1].is_silent(), hidden_states )
+            hidden_states = [state for state in hidden_states if not state[1].is_silent()]
             
             if isinstance( cmap, dict ):
                 # If you pass in a custom coloring scheme, use that.
                 hmm_color_cycle = []
                 for _, state in hidden_states:
-                    if state.name in cmap.keys():
+                    if state.name in list(cmap.keys()):
                         hmm_color_cycle.append( cmap[state.name] )
-                    elif 'else' in cmap.keys():
+                    elif 'else' in list(cmap.keys()):
                         hmm_color_cycle.append( cmap['else'] )
                     else:
                         hmm_color_cycle.append( 'k' )
@@ -399,14 +400,14 @@ class Event( Segment ):
                 except:
                     # If using any other naming scheme, assign a color from the colormap
                     # to each state without any ordering, since none was specified.
-                    states = { hmm.states[i]: i for i in xrange( len(hmm.states) ) }
+                    states = { hmm.states[i]: i for i in range( len(hmm.states) ) }
                     hmm_color_cycle = [ cm( states[state] ) for i, state in hidden_states ]
 
-        if 'color' in kwargs.keys(): # If the user has specified a scheme..
+        if 'color' in list(kwargs.keys()): # If the user has specified a scheme..
             color_arg = kwargs['color'] # Pull out the coloring scheme..
             
             if color_arg == 'cycle': # Use a 4-color rotating cycle
-                color = [ color_cycle[i%4] for i in xrange(self.n) ]
+                color = [ color_cycle[i%4] for i in range(self.n) ]
 
             elif color_arg == 'hmm': # coloring by HMM hidden state
                 color = hmm_color_cycle
@@ -432,7 +433,7 @@ class Event( Segment ):
             color, color_arg = 'k', 'k'
 
         # Set appropriate labels 
-        if 'label' in kwargs.keys():
+        if 'label' in list(kwargs.keys()):
             if isinstance( label, str ):
                 labels = [ kwargs['label'] ]
             else:
@@ -521,7 +522,7 @@ class Event( Segment ):
         d = json.loads( _json )
 
         event = MetaSegment() 
-        if 'current' not in d.keys():
+        if 'current' not in list(d.keys()):
             event.__class__ = type("MetaEvent", (MetaEvent, ), d )
         else:
             event = cls( d['current'], d['start'], )
@@ -834,7 +835,7 @@ class File( Segment ):
         query = np.array( db.read( "SELECT ID, SerialID, start, end FROM Events \
                                     WHERE AnalysisID = {0}".format(AnalysisID) ) )
         EventID, SerialID, starts, ends = query[:, 0], query[:, 1], query[:, 2], query[:,3]
-        starts, ends = map( int, starts ), map( int, ends )
+        starts, ends = list(map( int, starts )), list(map( int, ends ))
         
         file.parse( parser=MemoryParse( starts, ends ) )
 
@@ -967,12 +968,12 @@ class Experiment( object ):
         # are not open at the same time.
         for file in it.imap( File, self.filenames ):
             if verbose:
-                print "Opening {}".format( file.filename )
+                print("Opening {}".format( file.filename ))
 
             file.parse( parser=event_detector )
 
             if verbose:
-                print "\tDetected {} Events".format( file.n )
+                print("\tDetected {} Events".format( file.n ))
             
             # If using a segmenter, then segment all of the events in this file
             for i, event in enumerate( file.events ):
@@ -981,7 +982,7 @@ class Experiment( object ):
                 if segmenter is not None:
                     event.parse( parser=segmenter )
                     if verbose:
-                        print "\t\tEvent {} has {} segments".format( i+1, event.n )
+                        print("\t\tEvent {} has {} segments".format( i+1, event.n ))
 
             if meta:
                 file.to_meta()

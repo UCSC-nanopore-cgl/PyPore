@@ -124,11 +124,11 @@ class Table( object ):
 
     @property
     def column_names( self ):
-        return map( lambda x: x[0], self.columns )
+        return [x[0] for x in self.columns]
 
     @property
     def column_types( self ):
-        return map( lambda x: x[1], self.columns )
+        return [x[1] for x in self.columns]
 
     def read( self, columns=None, values=None ):
         '''
